@@ -45,6 +45,7 @@ ARG SETPROXY=False
 ARG SETTLS=False
 ARG PROXYLOCATION=www.example.com
 ARG PARANOIA_LVL=1
+ARG OWASP=3.2.0
 
 RUN apt-get update && apt-get install -y zlib1g-dev git wget gcc  libxml2-dev libcurl4-gnutls-dev liblua5.3-dev libpcre++-dev make
 
@@ -74,10 +75,14 @@ RUN mkdir /etc/modsecurity.d && \
     wget https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/unicode.mapping
 RUN sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine Off/g' /etc/modsecurity.d/modsecurity.conf
 
-RUN git clone https://github.com/SpiderLabs/owasp-modsecurity-crs.git owasp/ && \
+RUN cd /etc/modsecurity.d && \
+	      git clone https://github.com/SpiderLabs/owasp-modsecurity-crs.git owasp/ && \
               cd owasp/ && \
-              git checkout -qf v3.0.2 && \
-              mv crs-setup.conf.example crs-setup.conf
+              git checkout -qf v$OWASP && \
+              mv crs-setup.conf.example crs-setup.conf && \
+              cd rules/ && \
+	      mv REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf && \
+	      mv RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
 
 RUN sed -i '1iload_module modules/ngx_http_modsecurity_module.so;' /etc/nginx/nginx.conf
 
